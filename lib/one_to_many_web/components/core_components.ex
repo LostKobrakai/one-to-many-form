@@ -271,7 +271,10 @@ defmodule OneToManyWeb.CoreComponents do
       if assigns.multiple, do: name <> "[]", else: name
     end)
     |> assign_new(:id, fn -> Phoenix.HTML.Form.input_id(f, field) end)
-    |> assign_new(:value, fn -> Phoenix.HTML.Form.input_value(f, field) end)
+    |> assign_new(:value, fn ->
+      Phoenix.HTML.Form.input_value(f, field)
+      |> to_string()
+    end)
     |> assign_new(:errors, fn -> translate_errors(f.errors || [], field) end)
     |> input()
   end
