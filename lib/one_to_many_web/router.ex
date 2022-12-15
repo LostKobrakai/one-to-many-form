@@ -17,7 +17,7 @@ defmodule OneToManyWeb.Router do
   scope "/", OneToManyWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", ListLive
   end
 
   # Other scopes may use custom stacks.
