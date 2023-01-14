@@ -19,7 +19,7 @@ defmodule OneToMany.GroceriesList do
     |> cast(params, [:email])
     |> validate_required([:email])
     |> validate_format(:email, ~r/@/)
-    |> cast_embed(:lines, with: &line_changeset/2)
+    |> cast_embed(:lines, with: &line_changeset/2, required: true )
   end
 
   def line_changeset(city, params) do
