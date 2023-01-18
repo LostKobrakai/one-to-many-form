@@ -8,5 +8,14 @@ defmodule OneToMany.Repo.Migrations.AddTables do
 
       timestamps()
     end
+
+    create table("groceries_lines") do
+      add :item, :string
+      add :amount, :integer
+      add :sequence, :integer
+      add :groceries_list_id, references(:groceries_lists, on_delete: :delete_all)
+
+      timestamps()
+    end
   end
 end

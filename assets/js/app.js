@@ -16,19 +16,51 @@
 //
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
-import "phoenix_html"
+import 'phoenix_html'
 // Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
-import {LiveSocket} from "phoenix_live_view"
-import topbar from "../vendor/topbar"
+import { Socket } from 'phoenix'
+import { LiveSocket } from 'phoenix_live_view'
+import topbar from '../vendor/topbar'
+import Sortable from '../vendor/Sortable.min.js'
 
-let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}})
+let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute('content')
+let liveSocket = new LiveSocket('/live', Socket, {
+  hooks: {
+    Sortable: {
+      mounted() {
+        this.sortable = new Sortable(this.el, {
+          group: 'lines',
+          animation: 150,
+          ghostClass: 'is-sorting',
+          swapThreshold: 0.5,
+          handle: '.handle',
+          draggable: '.draggable',
+          store: {
+            get: this.getOrder.bind(this),
+            set: this.setOrder.bind(this)
+          }
+        })
+      },
+
+      getOrder() {
+        return []
+      },
+
+      setOrder(sortable) {
+        const sortedArray = sortable.toArray().map(Number)
+        this.pushEventTo(this.el, 'sorted', {
+          ordered_indices: sortedArray
+        })
+      }
+    }
+  },
+  params: { _csrf_token: csrfToken }
+})
 
 // Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", info => topbar.delayedShow(200))
-window.addEventListener("phx:page-loading-stop", info => topbar.hide())
+topbar.config({ barColors: { 0: '#29d' }, shadowColor: 'rgba(0, 0, 0, .3)' })
+window.addEventListener('phx:page-loading-start', info => topbar.delayedShow(200))
+window.addEventListener('phx:page-loading-stop', info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
@@ -38,4 +70,3 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
-

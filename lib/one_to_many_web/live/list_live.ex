@@ -17,9 +17,11 @@ defmodule OneToManyWeb.ListLive do
 
       <fieldset class="flex flex-col gap-2">
         <legend>Groceries</legend>
-        <%= for f_line <- Phoenix.HTML.Form.inputs_for(f, :lines) do %>
-          <.line f_line={f_line} />
-        <% end %>
+        <div phx-hook="Sortable" id="lines">
+          <%= for f_line <- Phoenix.HTML.Form.inputs_for(f, :lines) do %>
+            <.line f_line={f_line} />
+          <% end %>
+        </div>
         <.button class="mt-2" type="button" phx-click="add-line">Add</.button>
       </fieldset>
 
@@ -39,10 +41,14 @@ defmodule OneToManyWeb.ListLive do
       )
 
     ~H"""
-    <div class={if(@deleted, do: "opacity-50")}>
+    <div class={"draggable#{if(@deleted, do: " opacity-50")}"} data-id={@f_line.index}>
       <%= Phoenix.HTML.Form.hidden_inputs_for(@f_line) %>
       <.input field={{@f_line, :delete}} type="hidden" />
+      <.input field={{@f_line, :sequence}} type="hidden" />
       <div class="flex gap-4 items-end">
+        <div class="handle">
+          <.sort_handle />
+        </div>
         <div class="grow">
           <.input class="mt-0" field={{@f_line, :item}} readonly={@deleted} label="Item" />
         </div>
@@ -69,6 +75,12 @@ defmodule OneToManyWeb.ListLive do
     """
   end
 
+  def sort_handle(assigns) do
+    ~H"""
+    :::
+    """
+  end
+
   @impl true
   def mount(_, _, socket) do
     base = GroceriesList.load()
@@ -86,7 +98,12 @@ defmodule OneToManyWeb.ListLive do
     socket =
       update(socket, :changeset, fn changeset ->
         existing = get_change_or_field(changeset, :lines)
-        Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
+
+        Ecto.Changeset.put_assoc(
+          changeset,
+          :lines,
+          existing ++ [%{sequence: Enum.count(existing)}]
+        )
       end)
 
     {:noreply, socket}
@@ -107,10 +124,27 @@ defmodule OneToManyWeb.ListLive do
             rest
           end
 
-        Ecto.Changeset.put_embed(changeset, :lines, lines)
+        Ecto.Changeset.put_assoc(changeset, :lines, lines)
       end)
 
     {:noreply, socket}
+  end
+
+  def handle_event("sorted", %{"ordered_indices" => ordered_indices}, socket) do
+    changeset = socket.assigns.changeset
+    related_entries = get_change_or_field(changeset, :lines)
+
+    sorted_related_entries =
+      ordered_indices
+      |> Enum.map(&Enum.at(related_entries, &1))
+      |> Enum.with_index()
+      |> Enum.map(fn {entry, idx} ->
+        Ecto.Changeset.change(entry, %{sequence: idx})
+      end)
+
+    updated_changeset = Ecto.Changeset.put_assoc(changeset, :lines, sorted_related_entries)
+
+    {:noreply, assign(socket, changeset: updated_changeset)}
   end
 
   def handle_event("validate", %{"form" => params}, socket) do
