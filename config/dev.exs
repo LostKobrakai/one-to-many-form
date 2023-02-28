@@ -58,8 +58,7 @@ config :one_to_many, OneToManyWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/one_to_many_web/(live|views)/.*(ex)$",
-      ~r"lib/one_to_many_web/templates/.*(eex)$"
+      ~r"lib/sample_app_web/(controllers|live|components)/.*(ex|heex)$"
     ]
   ]
 

@@ -39,7 +39,6 @@ defmodule OneToManyWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        namespace: OneToManyWeb,
         formats: [:html, :json],
         layouts: [html: OneToManyWeb.Layouts]
 

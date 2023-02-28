@@ -5,21 +5,14 @@ defmodule OneToManyWeb.ListLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.simple_form
-      :let={f}
-      id="form"
-      for={@changeset}
-      phx-change="validate"
-      phx-submit="submit"
-      as="form"
-    >
-      <.input field={{f, :email}} label="Email" />
+    <.simple_form :let={f} id="form" for={@form} phx-change="validate" phx-submit="submit" as="form">
+      <.input field={f[:email]} label="Email" />
 
       <fieldset class="flex flex-col gap-2">
         <legend>Groceries</legend>
-        <%= for f_line <- Phoenix.HTML.Form.inputs_for(f, :lines) do %>
+        <.inputs_for :let={f_line} field={f[:lines]}>
           <.line f_line={f_line} />
-        <% end %>
+        </.inputs_for>
         <.button class="mt-2" type="button" phx-click="add-line">Add</.button>
       </fieldset>
 
@@ -40,16 +33,19 @@ defmodule OneToManyWeb.ListLive do
 
     ~H"""
     <div class={if(@deleted, do: "opacity-50")}>
-      <%= Phoenix.HTML.Form.hidden_inputs_for(@f_line) %>
-      <.input field={{@f_line, :delete}} type="hidden" />
+      <input
+        type="hidden"
+        name={Phoenix.HTML.Form.input_name(@f_line, :delete)}
+        value={to_string(Phoenix.HTML.Form.input_value(@f_line, :delete))}
+      />
       <div class="flex gap-4 items-end">
         <div class="grow">
-          <.input class="mt-0" field={{@f_line, :item}} readonly={@deleted} label="Item" />
+          <.input class="mt-0" field={@f_line[:item]} readonly={@deleted} label="Item" />
         </div>
         <div class="grow">
           <.input
             class="mt-0"
-            field={{@f_line, :amount}}
+            field={@f_line[:amount]}
             type="number"
             readonly={@deleted}
             label="Amount"
@@ -77,16 +73,16 @@ defmodule OneToManyWeb.ListLive do
 
   defp init(socket, base) do
     changeset = GroceriesList.changeset(base, %{})
-
-    assign(socket, base: base, changeset: changeset)
+    assign(socket, base: base, form: to_form(changeset))
   end
 
   @impl true
   def handle_event("add-line", _, socket) do
     socket =
-      update(socket, :changeset, fn changeset ->
+      update(socket, :form, fn %{source: changeset} ->
         existing = get_change_or_field(changeset, :lines)
-        Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
+        changeset = Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
+        to_form(changeset)
       end)
 
     {:noreply, socket}
@@ -96,7 +92,7 @@ defmodule OneToManyWeb.ListLive do
     index = String.to_integer(index)
 
     socket =
-      update(socket, :changeset, fn changeset ->
+      update(socket, :form, fn %{source: changeset} ->
         existing = get_change_or_field(changeset, :lines)
         {to_delete, rest} = List.pop_at(existing, index)
 
@@ -107,7 +103,9 @@ defmodule OneToManyWeb.ListLive do
             rest
           end
 
-        Ecto.Changeset.put_embed(changeset, :lines, lines)
+        changeset
+        |> Ecto.Changeset.put_embed(:lines, lines)
+        |> to_form()
       end)
 
     {:noreply, socket}
@@ -119,7 +117,7 @@ defmodule OneToManyWeb.ListLive do
       |> GroceriesList.changeset(params)
       |> struct!(action: :validate)
 
-    {:noreply, assign(socket, changeset: changeset)}
+    {:noreply, assign(socket, form: to_form(changeset))}
   end
 
   def handle_event("submit", %{"form" => params}, socket) do
@@ -129,10 +127,11 @@ defmodule OneToManyWeb.ListLive do
         {:noreply, init(socket, data)}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, changeset: changeset)}
+        {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
 
+  # TODO Replace with Ecto.Changeset.get_assoc on ecto 3.10
   defp get_change_or_field(changeset, field) do
     with nil <- Ecto.Changeset.get_change(changeset, field) do
       Ecto.Changeset.get_field(changeset, field, [])
