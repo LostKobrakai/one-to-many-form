@@ -80,7 +80,7 @@ defmodule OneToManyWeb.ListLive do
   def handle_event("add-line", _, socket) do
     socket =
       update(socket, :form, fn %{source: changeset} ->
-        existing = get_change_or_field(changeset, :lines)
+        existing = Ecto.Changeset.get_embed(changeset, :lines)
         changeset = Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
         to_form(changeset)
       end)
@@ -93,7 +93,7 @@ defmodule OneToManyWeb.ListLive do
 
     socket =
       update(socket, :form, fn %{source: changeset} ->
-        existing = get_change_or_field(changeset, :lines)
+        existing = Ecto.Changeset.get_embed(changeset, :lines)
         {to_delete, rest} = List.pop_at(existing, index)
 
         lines =
@@ -128,13 +128,6 @@ defmodule OneToManyWeb.ListLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
-    end
-  end
-
-  # TODO Replace with Ecto.Changeset.get_assoc on ecto 3.10
-  defp get_change_or_field(changeset, field) do
-    with nil <- Ecto.Changeset.get_change(changeset, field) do
-      Ecto.Changeset.get_field(changeset, field, [])
     end
   end
 end
