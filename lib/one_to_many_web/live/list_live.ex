@@ -5,7 +5,7 @@ defmodule OneToManyWeb.ListLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.simple_form :let={f} id="form" for={@form} phx-change="validate" phx-submit="submit" as="form">
+    <.simple_form :let={f} id="form" for={@changeset} phx-change="validate" phx-submit="submit" as="form">
       <.input field={f[:email]} label="Email" />
 
       <fieldset class="flex flex-col gap-2">
@@ -73,16 +73,15 @@ defmodule OneToManyWeb.ListLive do
 
   defp init(socket, base) do
     changeset = GroceriesList.changeset(base, %{})
-    assign(socket, base: base, form: to_form(changeset))
+    assign(socket, base: base, changeset: changeset)
   end
 
   @impl true
   def handle_event("add-line", _, socket) do
     socket =
-      update(socket, :form, fn %{source: changeset} ->
+      update(socket, :changeset, fn changeset ->
         existing = Ecto.Changeset.get_embed(changeset, :lines)
-        changeset = Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
-        to_form(changeset)
+        Ecto.Changeset.put_embed(changeset, :lines, existing ++ [%{}])
       end)
 
     {:noreply, socket}
@@ -92,7 +91,7 @@ defmodule OneToManyWeb.ListLive do
     index = String.to_integer(index)
 
     socket =
-      update(socket, :form, fn %{source: changeset} ->
+      update(socket, :changeset, fn changeset ->
         existing = Ecto.Changeset.get_embed(changeset, :lines)
         {to_delete, rest} = List.pop_at(existing, index)
 
@@ -105,7 +104,6 @@ defmodule OneToManyWeb.ListLive do
 
         changeset
         |> Ecto.Changeset.put_embed(:lines, lines)
-        |> to_form()
       end)
 
     {:noreply, socket}
@@ -117,7 +115,7 @@ defmodule OneToManyWeb.ListLive do
       |> GroceriesList.changeset(params)
       |> struct!(action: :validate)
 
-    {:noreply, assign(socket, form: to_form(changeset))}
+    {:noreply, assign(socket, changeset: changeset)}
   end
 
   def handle_event("submit", %{"form" => params}, socket) do
@@ -127,7 +125,7 @@ defmodule OneToManyWeb.ListLive do
         {:noreply, init(socket, data)}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+        {:noreply, assign(socket, changeset: changeset)}
     end
   end
 end
