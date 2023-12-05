@@ -5,8 +5,8 @@ defmodule OneToManyWeb.ListLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.simple_form :let={f} id="form" for={@form} phx-change="validate" phx-submit="submit" as="form">
-      <.input field={f[:email]} label="Email" />
+    <.simple_form id="form" for={@form} phx-change="validate" phx-submit="submit" as="form">
+      <.input field={@form[:email]} label="Email" />
 
       <fieldset class="flex flex-col gap-2">
         <legend>Groceries</legend>
