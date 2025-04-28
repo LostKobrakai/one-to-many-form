@@ -22,9 +22,9 @@ defmodule OneToMany.GroceriesList do
     |> cast_embed(:lines, with: &line_changeset/2)
   end
 
-  def line_changeset(city, params) do
+  def line_changeset(list, params) do
     changeset =
-      city
+      list
       |> cast(params, [:item, :amount, :delete])
       |> validate_required([:item, :amount])
 
